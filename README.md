@@ -1,6 +1,7 @@
 ## Introduction
 
-A play-clj game in which ... well, that part is up to you.
+I'm following 'Learning LibGDG Game Development' book and implementing the example
+using play-clj.
 
 ## Contents
 
