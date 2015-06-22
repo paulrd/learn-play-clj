@@ -12,7 +12,6 @@
 (def ^:const pix-map-height 32)
 (def ^:const num-sprites 5)
 
-
 (defscreen blank-screen
   :on-render
   (fn [screen entities]
@@ -49,14 +48,7 @@
                            (.printStackTrace e)
                            (set-screen! hello-world-game blank-screen)))))
 
-(defn move
-  [entity direction]
-  (case direction
-    :down (assoc entity :y (- (:y entity) speed))
-    :up (assoc entity :y (+ (:y entity) speed))
-    :right (assoc entity :x (+ (:x entity) speed))
-    :left (assoc entity :x (- (:x entity) speed))
-    nil))
+
 
 (defn make-sprite []
   (let [pm (doto (->> :r-g-b-a8888 pixmap-format
@@ -71,8 +63,8 @@
         sw (.getWidth s), sh (.getHeight s)
         s (doto s (.setOrigin (/ sw 2.0) (/ sh 2.0))
                 (.setPosition (- (rand 4) 2) (- (rand 4) 2)))
-        ;;t (assoc (texture s) :x 700 :y 500)
-        t (texture s)
+        t (assoc (texture s) :x 700 :y 500)
+        ;;t (texture s)
         ]
     (println (texture! t :get-region-width) " : " sw)
     (println "x: " (:x t))
@@ -87,6 +79,16 @@
   (let [sprites (repeatedly num-sprites make-sprite)]
     (println (first sprites))
     sprites))
+
+(defn move
+  [entities direction]
+  (let [entity (first entities)]
+    (case direction
+      :down (assoc entity :y (- (:y entity) speed))
+      :up (assoc entity :y (+ (:y entity) speed))
+      :right (assoc entity :x (+ (:x entity) speed))
+      :left (assoc entity :x (- (:x entity) speed))
+      nil)))
 
 (defscreen main-screen
   :on-show
@@ -118,13 +120,13 @@
   (fn [screen entities]
     (cond
       (= (:key screen) (key-code :dpad-up))
-      (move (first entities) :up)
+      (move entities :up)
       (= (:key screen) (key-code :dpad-down))
-      (move (first entities) :down)
+      (move entities :down)
       (= (:key screen) (key-code :dpad-right))
-      (move (first entities) :right)
+      (move entities :right)
       (= (:key screen) (key-code :dpad-left))
-      (move (first entities) :left)
+      (move entities :left)
       (= (:key screen) (key-code :r))
       (on-gl (set-screen! hello-world-game main-screen text-screen))))
 
@@ -145,6 +147,7 @@
     (println ":on pause!")
     (let [state (first entities)]
       (update! screen :paused? true)
+      (println entities)
       entities))
 
   :on-resume
