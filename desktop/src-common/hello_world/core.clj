@@ -48,8 +48,6 @@
                            (.printStackTrace e)
                            (set-screen! hello-world-game blank-screen)))))
 
-
-
 (defn make-sprite []
   (let [pm (doto (->> :r-g-b-a8888 pixmap-format
                       (pixmap* pix-map-width pix-map-height))
@@ -58,6 +56,7 @@
              (.drawLine pix-map-width 0 0 pix-map-height) (.setColor 0 1 1 1)
              (.drawRectangle 0 0 pix-map-width pix-map-height)
              )
+        tx (texture pm )
         s (doto (-> pm texture :object com.badlogic.gdx.graphics.g2d.Sprite.)
             (.setSize 1 1))
         sw (.getWidth s), sh (.getHeight s)
@@ -66,9 +65,6 @@
         t (assoc (texture s) :x 700 :y 500)
         ;;t (texture s)
         ]
-    (println (texture! t :get-region-width) " : " sw)
-    (println "x: " (:x t))
-    (println "sx: " (.getX (:object t)))
     t
     )
   )
@@ -77,18 +73,17 @@
   "make some sprite entities"
   []
   (let [sprites (repeatedly num-sprites make-sprite)]
-    (println (first sprites))
+    (println (map #(.getX (:object %)) sprites))
     sprites))
 
 (defn move
-  [entities direction]
-  (let [entity (first entities)]
-    (case direction
-      :down (assoc entity :y (- (:y entity) speed))
-      :up (assoc entity :y (+ (:y entity) speed))
-      :right (assoc entity :x (+ (:x entity) speed))
-      :left (assoc entity :x (- (:x entity) speed))
-      nil)))
+  [entity direction]
+  (case direction
+    :down (assoc entity :y (- (:y entity) speed))
+    :up (assoc entity :y (+ (:y entity) speed))
+    :right (assoc entity :x (+ (:x entity) speed))
+    :left (assoc entity :x (- (:x entity) speed))
+    entity))
 
 (defscreen main-screen
   :on-show
@@ -97,9 +92,9 @@
     (add-timer! screen :spawn-enemy 10 2 19)
     (update! screen :renderer (stage) :camera (orthographic) :paused? false)
     (conj (make-sprites)
-          (assoc (texture "drinnon.jpg")
-                   :x 100 :y 100 :width 300 :height 300
-                   :angle 45 :origin-x 0 :origin-y 0)))
+          (assoc (texture "drinnon.jpg") :id :pic
+                 :x 100 :y 100 :width 300 :height 300
+                 :angle 45 :origin-x 0 :origin-y 0)))
   
   :on-timer
   (fn [screen entities]
@@ -111,24 +106,20 @@
 
   :on-render
   (fn [screen entities]
-    #_(println screen)
-    (when-not (:paused? screen) (graphics! :get-delta-time))
     (clear! (/ 0x64 255.0) (/ 0x95 255.0) (/ 0xed 255.0) (/ 0xff 255.0))
+    (when-not (:paused? screen) (graphics! :get-delta-time))
     (render! screen entities))
 
   :on-key-down
   (fn [screen entities]
-    (cond
-      (= (:key screen) (key-code :dpad-up))
-      (move entities :up)
-      (= (:key screen) (key-code :dpad-down))
-      (move entities :down)
-      (= (:key screen) (key-code :dpad-right))
-      (move entities :right)
-      (= (:key screen) (key-code :dpad-left))
-      (move entities :left)
-      (= (:key screen) (key-code :r))
-      (on-gl (set-screen! hello-world-game main-screen text-screen))))
+    (if (= (:key screen) (key-code :r))
+      (on-gl (set-screen! hello-world-game main-screen text-screen))
+      (condp = (:key screen)
+        (key-code :dpad-up) (map #(move % :up) entities)
+        (key-code :dpad-down) (map #(move % :down) entities)
+        (key-code :dpad-right) (map #(move % :right) entities)
+        (key-code :dpad-left) (map #(move % :left) entities)
+        entities)))
 
   :on-touch-down
   (fn [screen entities]
@@ -144,15 +135,12 @@
 
   :on-pause
   (fn [screen entities]
-    (println ":on pause!")
     (let [state (first entities)]
       (update! screen :paused? true)
-      (println entities)
       entities))
 
   :on-resume
   (fn [screen entities]
-    (println ":on resume!")
     (let [state (first entities)]
       (update! screen :paused? false)
       entities)))
